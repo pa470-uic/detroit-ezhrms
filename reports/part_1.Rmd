@@ -20,6 +20,7 @@ Template file. Code will be included in folded blocks in the output to facilitat
 ```{r}
 #example connection to database. note that you have to download the database from onedrive
 
+#test 
 con <- DBI::dbConnect(RSQLite::SQLite(), "database/detroit.sqlite")
 
 # sales tbl
