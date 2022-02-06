@@ -85,7 +85,8 @@ db1 %>% group_by(`propclass`) %>%
   summarize(n = n()) %>%
   slice_max(order_by = `n`, n= 5)
 
-
+ggplot(db1, aes (x = year(sale_date), y = ratio)) +
+geom_smooth()
 
 
 ```
