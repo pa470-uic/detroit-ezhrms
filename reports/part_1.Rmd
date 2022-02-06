@@ -76,7 +76,9 @@ db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
 db1 %>% group_by(year(sale_date)) %>%
   select(sale_price, ASSESSEDVALUE) %>%
     summarise(sale_price_median = median(sale_price),
-              assesed_median = median(ASSESSEDVALUE))
+              assesed_median = median(ASSESSEDVALUE),
+              sale_price_avg = mean(sale_price),
+              assesed_avg = mean(ASSESSEDVALUE))
 #table shows median sale price is low whiled the assessed median is higher for all years
 
 
