@@ -21,6 +21,8 @@ Template file. Code will be included in folded blocks in the output to facilitat
 #example connection to database. note that you have to download the database from onedrive
 
 #test 
+
+
 con <- DBI::dbConnect(RSQLite::SQLite(), "database/detroit.sqlite")
 
 # sales tbl
@@ -35,6 +37,52 @@ dplyr::tbl(con, 'sales')
 dplyr::tbl(con, 'sales') %>% count(year(sale_date))
 
 #dplyr::tbl(con, 'sales') %>% count(year(sale_date)) %>% show_query()
+
+```
+```{r Part I: Exploratory}
+
+#shows list of tables
+as.data.frame(dbListTables(con))
+
+
+#Looking at table data and variables 
+dbReadTable(con, 'sales')
+dbReadTable(con, 'assessments')
+dbReadTable(con, 'blight')
+dbReadTable(con, 'foreclosures')
+dbReadTable(con, 'parcels')
+dbReadTable(con, 'parcels_historic')
+
+
+##Merging tables
+
+#mkaing tables
+sales <- dplyr::tbl(con, 'sales') %>% dplyr::collect()
+assessments <- dplyr::tbl(con, 'assessments') %>% dplyr::collect()
+#rename column
+assessments <- rename(assessments, parcel_num = PARCELNO)
+
+db1 <- inner_join(sales, assessments, by = "parcel_num")
+
+
+#sales ratio
+
+db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
+
+#Stats
+
+
+
+db1 %>% group_by(year(sale_date)) %>%
+  select(sale_price, ASSESSEDVALUE) %>%
+    summarise(sale_price_median = median(sale_price),
+              assesed_median = median(ASSESSEDVALUE))
+#table shows median sale price is low whiled the assessed median is higher for all years
+
+
+
+
+
 
 ```
 
