@@ -79,7 +79,7 @@ db1 %>% group_by(year(sale_date)) %>%
               assesed_median = median(ASSESSEDVALUE),
               sale_price_avg = mean(sale_price),
               assesed_avg = mean(ASSESSEDVALUE))
-#table shows median sale price is low while the assessed median is higher for all years
+#table shows median sale price is low while the assessed median is higher for all years. The graph on the bottom shows that the sales ratio tend was high and begins to dip around significantly in 2017
 
 db1 %>% group_by(`propclass`) %>%
   summarize(n = n()) %>%
