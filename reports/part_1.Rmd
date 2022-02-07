@@ -98,7 +98,7 @@ db1 %>% count(`property_c`, sort=TRUE)
 db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
 
 
-db1 <- db1 %>% filter(sale_year >= 2015 & sale_year <= 2018)
+db1 <- db1 %>% filter(sale_date >= 2015 & sale_date <= 2018)
 
 
 db1 <- distinct(db1)
