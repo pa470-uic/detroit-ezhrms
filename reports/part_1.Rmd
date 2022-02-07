@@ -57,7 +57,7 @@ dbReadTable(con, 'parcels_historic')
 
 ##Merging tables
 
-#mkaing tables
+#making tables
 sales <- dplyr::tbl(con, 'sales') %>% dplyr::collect()
 assessments <- dplyr::tbl(con, 'assessments') %>% dplyr::collect()
 #rename column
@@ -67,19 +67,41 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 
 
 #sales ratio
+#The sales ratio is defined as the assessed value 
+#of a property divided by the sale price.
 
 db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
+
+
+db1 <- db1 %>% mutate(sale_year = (year(sale_date)))
+
+
+#count property type
+db1 %>% count(`property_c`, sort=TRUE)
+
+
+#filtered out based on https://www.michigan.gov/documents/treasury/CAMA_Data_Standards_Final_121719_674322_7.pdf
+
+db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
+
+
+
+
+
 
 #Stats
 
 
 
-db1 %>% group_by(year) %>%
+tbl1 <- db1 %>% group_by(year) %>%
   select(sale_price, ASSESSEDVALUE) %>%
     summarise(sale_price_median = median(sale_price),
               assesed_median = median(ASSESSEDVALUE),
               sale_price_avg = mean(sale_price),
               assesed_avg = mean(ASSESSEDVALUE))
+
+
+
 #table shows median sale price is low while the assessed median is higher for all years. The graph on the bottom shows that the sales ratio tend was high and begins to dip around significantly in 2017
 
 db1 %>% group_by(`propclass`) %>%
@@ -92,22 +114,43 @@ geom_smooth()
 
 
 
-tbl1<- db1 %>% count(year(sale_date))
+tbl2 <- db1 %>% count(year(sale_date))
 
 
 
-ggplot(tbl1, aes(x=`year(sale_date)`, y =n)) +
+ggplot(tbl2, aes(x=`year(sale_date)`, y =n)) +
   geom_point() +
   geom_line()
 
 
 
 
+#number of foreclosures
+
+
 ```
+
+
 ```{r Part I cont}
 
+devtools::install_github("cmf-uchicago/cmfproperty")
+
+library(cmfproperty)
+
+ratios <-
+  cmfproperty::reformat_data(
+    data = db1,
+    sale_col = "sale_price",
+    assessment_col = "ASSESSEDVALUE",
+    sale_year_col = "sale_year",
+  )
+  
+
+cmfproperty::make_report(ratios, 
+                         jurisdiction_name = "Detorit, Michigan")
 
 
 ```
 
+```
 
