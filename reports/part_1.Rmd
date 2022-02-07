@@ -55,7 +55,7 @@ dbReadTable(con, 'parcels')
 dbReadTable(con, 'parcels_historic')
 
 
-##Merging tables
+##Merging tables/Data clenaing
 
 #making tables
 sales <- dplyr::tbl(con, 'sales') %>% dplyr::collect()
@@ -63,7 +63,20 @@ assessments <- dplyr::tbl(con, 'assessments') %>% dplyr::collect()
 #rename column
 assessments <- rename(assessments, parcel_num = PARCELNO)
 
+sales <- sales %>%
+  mutate(
+    `sale_date` = year(`sale_date`)
+  )
+                    
+sales <- sales %>% filter(sale_date >= 2015 & sale_date <= 2018)
+
+sales %>% distinct(`sale_terms`)
+
+sales <- sales %>% filter(str_detect(`sale_terms`, 'VALID ARMS LENGTH'))
+
+
 db1 <- inner_join(sales, assessments, by = "parcel_num")
+
 
 
 #sales ratio
@@ -73,7 +86,7 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
 
 
-db1 <- db1 %>% mutate(sale_year = (year(sale_date)))
+#db1 <- db1 %>% mutate(sale_year = (sale_date))
 
 
 #count property type
@@ -85,8 +98,10 @@ db1 %>% count(`property_c`, sort=TRUE)
 db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
 
 
+db1 <- db1 %>% filter(sale_year >= 2015 & sale_year <= 2018)
 
 
+db1 <- distinct(db1)
 
 
 #Stats
@@ -102,23 +117,23 @@ tbl1 <- db1 %>% group_by(year) %>%
 
 
 
-#table shows median sale price is low while the assessed median is higher for all years. The graph on the bottom shows that the sales ratio tend was high and begins to dip around significantly in 2017
+#graphs 
 
 db1 %>% group_by(`propclass`) %>%
   summarize(n = n()) %>%
   slice_max(order_by = `n`, n= 5)
 
-ggplot(db1, aes (x = year(sale_date), y = ratio)) +
-geom_smooth()
+ggplot(db1, aes (x = sale_date, y = ratio)) +
+  geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k=4))
 
 
 
 
-tbl2 <- db1 %>% count(year(sale_date))
+tbl2 <- db1 %>% count(sale_date)
 
 
 
-ggplot(tbl2, aes(x=`year(sale_date)`, y =n)) +
+ggplot(tbl2, aes(x=sale_date, y =n)) +
   geom_point() +
   geom_line()
 
@@ -142,7 +157,7 @@ ratios <-
     data = db1,
     sale_col = "sale_price",
     assessment_col = "ASSESSEDVALUE",
-    sale_year_col = "sale_year",
+    sale_year_col = "sale_date",
   )
   
 
