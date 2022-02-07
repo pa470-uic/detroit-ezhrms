@@ -1,6 +1,6 @@
 ---
 title: "Part 1"
-author: "YOUR NAME"
+author: "Ezequiel Hermosillo"
 output: 
   html_document:
     code_folding: hide
@@ -12,6 +12,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 library(tidyverse)
 library(lubridate)
+library(DBI)
 
 ```
 
@@ -73,7 +74,7 @@ db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
 
 
 
-db1 %>% group_by(year(sale_date)) %>%
+db1 %>% group_by(year) %>%
   select(sale_price, ASSESSEDVALUE) %>%
     summarise(sale_price_median = median(sale_price),
               assesed_median = median(ASSESSEDVALUE),
@@ -87,6 +88,24 @@ db1 %>% group_by(`propclass`) %>%
 
 ggplot(db1, aes (x = year(sale_date), y = ratio)) +
 geom_smooth()
+
+
+
+
+tbl1<- db1 %>% count(year(sale_date))
+
+
+
+ggplot(tbl1, aes(x=`year(sale_date)`, y =n)) +
+  geom_point() +
+  geom_line()
+
+
+
+
+```
+```{r Part I cont}
+
 
 
 ```
