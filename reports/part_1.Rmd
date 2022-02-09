@@ -79,6 +79,14 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 
 
 
+
+
+```
+
+
+
+```{r}
+
 #sales ratio
 #The sales ratio is defined as the assessed value 
 #of a property divided by the sale price.
@@ -141,6 +149,7 @@ ggplot(tbl2, aes(x=sale_date, y =n)) +
 
 
 #number of foreclosures
+
 
 
 ```
