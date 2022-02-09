@@ -148,7 +148,22 @@ ggplot(tbl2, aes(x=sale_date, y =n)) +
 
 
 
-#number of foreclosures
+```
+
+
+
+```{r}
+foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
+
+
+foreclosures <- rename(assessments, parcel_num = prop_parcelnum)
+
+foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
+
+db2 <- inner_join(db1, foreclosures, by = "parcel_num")
+
+
+db2 <- db2 %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
 
 
 
