@@ -152,23 +152,6 @@ ggplot(tbl2, aes(x=sale_date, y =n)) +
 
 
 
-```{r}
-foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
-
-
-foreclosures <- rename(assessments, parcel_num = prop_parcelnum)
-
-foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
-
-db2 <- inner_join(db1, foreclosures, by = "parcel_num")
-
-
-db2 <- db2 %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
-
-
-
-```
-
 
 ```{r Part I cont}
 
@@ -191,5 +174,110 @@ cmfproperty::make_report(ratios,
 
 ```
 
+```{r Part I Cont}
+
+foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
+
+
+foreclosures <- rename(assessments, parcel_num = prop_parcelnum)
+
+foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
+
+db2 <- inner_join(db1, foreclosures, by = "parcel_num")
+
+
+#regrssions
+
+m1 <- lm(sale_price ~ sale_date, data=db2)
+
+m1 %>% broom::tidy()
+
+m1 %>% broom::glance()
+
+m1 %>% broom::augment()
+
+
+ggplot(m1 %>% augment(), aes(x=.resid)) +
+  geom_density(fill='navy', alpha=.6)
+
+
+#trying parsnip regression with sale/foreclosure
+
+lm_reg <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(sale_price ~ sale_date + factor(property_c), data = db2)
+
+lm_reg %>% broom::tidy()
+
+lm_reg %>% broom::glance()
+
+
+lm_reg <- lm(sale_price ~ sale_date + factor(property_c) + ASSESSEDVALUE, data = db2)
+
+lm_reg %>% broom::tidy()
+
+lm_reg %>% broom::glance()
+
+lm_reg %>% broom::augment()
+
+
+
+
+lm_reg <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(sale_price ~ sale_date + factor(property_c) + ASSESSEDVALUE + TAXABLEVALUE, data = db2)
+
+
+lm_reg %>% broom::tidy()
+
+lm_reg %>% broom::glance()
+
+
+
+
+lm_fore <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(`2015`~ ASSESSEDVALUE, data=db2)
+
+lm_fore %>% broom::tidy()
+
+lm_fore %>% broom::glance()
+
+
+
+
+lm_fore <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(`2015`~ ASSESSEDVALUE + TAXABLEVALUE, data=db2)
+
+lm_fore %>% broom::tidy()
+
+lm_fore %>% broom::glance()
+
+
+
+lm_fore <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(`2015`~ ASSESSEDVALUE + TAXABLEVALUE +sale_price, data=db2)
+
+lm_fore %>% broom::tidy()
+
+lm_fore %>% broom::glance()
+
+#worse r square
+
+lm_fore <- lm(`2015` ~ sale_date + ASSESSEDVALUE + TAXABLEVALUE + sale_price + factor(property_c), data = db2)
+
+lm_fore %>% broom::tidy()
+lm_fore %>% broom::glance()
+lm_reg %>% broom::augment()
+
+
 ```
+
 
