@@ -176,6 +176,8 @@ cmfproperty::make_report(ratios,
 
 ```{r Part I Cont}
 
+library(parsnip)
+
 foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
 
 
@@ -197,7 +199,7 @@ m1 %>% broom::glance()
 m1 %>% broom::augment()
 
 
-ggplot(m1 %>% augment(), aes(x=.resid)) +
+ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
   geom_density(fill='navy', alpha=.6)
 
 
