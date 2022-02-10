@@ -179,7 +179,7 @@ cmfproperty::make_report(ratios,
 foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
 
 
-foreclosures <- rename(assessments, parcel_num = prop_parcelnum)
+foreclosures <- rename(foreclosures, parcel_num = prop_parcelnum)
 
 foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
 
