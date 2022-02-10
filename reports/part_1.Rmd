@@ -271,14 +271,17 @@ lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
 
+
 #worse r square
 
 lm_fore <- lm(`2015` ~ sale_date + ASSESSEDVALUE + TAXABLEVALUE + sale_price + factor(property_c), data = db2)
 
 lm_fore %>% broom::tidy()
 lm_fore %>% broom::glance()
-lm_reg %>% broom::augment()
+lm_fore %>% broom::augment()
 
+ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
+  geom_density(fill='navy', alpha=.6)
 
 ```
 
