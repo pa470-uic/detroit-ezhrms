@@ -49,10 +49,10 @@ as.data.frame(dbListTables(con))
 #Looking at table data and variables 
 dbReadTable(con, 'sales')
 dbReadTable(con, 'assessments')
-dbReadTable(con, 'blight')
+#dbReadTable(con, 'blight')
 dbReadTable(con, 'foreclosures')
-dbReadTable(con, 'parcels')
-dbReadTable(con, 'parcels_historic')
+#dbReadTable(con, 'parcels')
+#dbReadTable(con, 'parcels_historic')
 
 
 ##Merging tables/Data cleaning
@@ -66,6 +66,7 @@ assessments <- rename(assessments, parcel_num = PARCELNO,
                       assessed_value = ASSESSEDVALUE,
                       tax_value = TAXABLEVALUE)
 
+# sale dat to only include the year
 sales <- sales %>%
   mutate(
     year_sale = year(`sale_date`)
@@ -160,7 +161,8 @@ ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(year_sale))) +
 
 #boxplot
 ggplot(data = db1) + 
-  geom_boxplot(mapping = aes(x = factor(propclass), y = assessed_value))
+  geom_boxplot(mapping = aes(x = factor(property_c), y = assessed_value)) +
+   scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
 
 
 #number of foreclosures
@@ -217,7 +219,7 @@ library(parsnip)
 
 #regressions
 
-mod_1 <- lm(sale_price ~ sale_date, data=db2)
+mod_1 <- lm(sale_price ~ factor(year_sale), data=db2)
 
 mod_1 %>% broom::tidy()
 
@@ -226,7 +228,7 @@ mod_1 %>% broom::glance()
 mod_1 %>% broom::augment()
 
 
-ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
+ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
   geom_density(fill='navy', alpha=.6)
 
 
