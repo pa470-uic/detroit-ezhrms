@@ -217,13 +217,13 @@ library(parsnip)
 
 #regressions
 
-m1 <- lm(sale_price ~ sale_date, data=db2)
+mod_1 <- lm(sale_price ~ sale_date, data=db2)
 
-m1 %>% broom::tidy()
+mod_1 %>% broom::tidy()
 
-m1 %>% broom::glance()
+mod_1 %>% broom::glance()
 
-m1 %>% broom::augment()
+mod1 %>% broom::augment()
 
 
 ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
