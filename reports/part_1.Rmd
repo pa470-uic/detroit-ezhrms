@@ -265,6 +265,8 @@ lm_reg %>% broom::glance()
 
 lm_reg %>% broom::augment()
 
+#a better model with an r squared of 19% large increase
+
 #augment works here but it doesn't have the .resid column 
 
 #ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
