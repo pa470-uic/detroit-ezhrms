@@ -223,7 +223,7 @@ mod_1 %>% broom::tidy()
 
 mod_1 %>% broom::glance()
 
-mod1 %>% broom::augment()
+mod_1 %>% broom::augment()
 
 
 ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
