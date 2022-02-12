@@ -265,6 +265,12 @@ lm_reg %>% broom::glance()
 
 lm_reg %>% broom::augment()
 
+#augment works here but it doesn't have the .resid column 
+
+#ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
+  #geom_density(fill='navy', alpha=.6) +
+   #scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  #scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
 
 
 
