@@ -219,7 +219,7 @@ library(parsnip)
 
 #regressions
 
-mod_1 <- lm(sale_price ~ factor(year_sale), data=db2)
+mod_1 <- lm(sale_price ~ year_sale, data=db2)
 
 mod_1 %>% broom::tidy()
 
@@ -227,9 +227,13 @@ mod_1 %>% broom::glance()
 
 mod_1 %>% broom::augment()
 
+#very, very , very low R squared not a good model
+#data skewed to the left 
 
 ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
-  geom_density(fill='navy', alpha=.6)
+  geom_density(fill='navy', alpha=.6) +
+   scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
 
 
 #trying parsnip regression with sale/foreclosure
@@ -237,14 +241,23 @@ ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
 lm_reg <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(sale_price ~ sale_date + factor(property_c), data = db2)
+  fit(sale_price ~ factor(year_sale) + factor(property_c), data = db2)
 
 lm_reg %>% broom::tidy()
 
 lm_reg %>% broom::glance()
 
+#lm_reg %>% broom::augment() gives an error of Error in augment.model_fit(.) : 
+  #argument "new_data" is missing, with no default
 
-lm_reg <- lm(sale_price ~ year_sale + factor(propclass) + assessed_value, data = db2)
+#(lm_reg %>% broom::augment(), aes(x=.resid)) +
+  #geom_density(fill='navy', alpha=.6) +
+   #scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  #scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+
+lm_reg <- lm(sale_price ~ year_sale + factor(property_c) + assessed_value, data = db2)
 
 lm_reg %>% broom::tidy()
 
@@ -258,7 +271,7 @@ lm_reg %>% broom::augment()
 lm_reg <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(sale_price ~ year_sale+ factor(propclass) + assessed_value + tax_value, data = db2)
+  fit(sale_price ~ year_sale + factor(property_c) + assessed_value + tax_value, data = db2)
 
 
 lm_reg %>% broom::tidy()
@@ -294,7 +307,7 @@ lm_fore %>% broom::glance()
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(`2015`~ assessed_value + tax_value +sale_price, data=db2)
+  fit(`2015`~ assessed_value + tax_value + sale_price, data=db2)
 
 lm_fore %>% broom::tidy()
 
@@ -303,7 +316,7 @@ lm_fore %>% broom::glance()
 
 #worse r square
 
-lm_fore <- lm(`2015` ~ year_sale + assessed_value + tax_falue + sale_price + factor(propclass), data = db2)
+lm_fore <- lm(`2015` ~ year_sale + assessed_value + tax_falue + sale_price + factor(property_c), data = db2)
 
 lm_fore %>% broom::tidy()
 lm_fore %>% broom::glance()
