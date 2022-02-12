@@ -55,13 +55,16 @@ dbReadTable(con, 'parcels')
 dbReadTable(con, 'parcels_historic')
 
 
-##Merging tables/Data clenaing
+##Merging tables/Data cleaning
 
 #making tables
 sales <- dplyr::tbl(con, 'sales') %>% dplyr::collect()
 assessments <- dplyr::tbl(con, 'assessments') %>% dplyr::collect()
+foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
 #rename column
-assessments <- rename(assessments, parcel_num = PARCELNO)
+assessments <- rename(assessments, parcel_num = PARCELNO,
+                      assessed_value = ASSESSEDVALUE,
+                      tax_value = TAXABLEVALUE)
 
 sales <- sales %>%
   mutate(
@@ -85,13 +88,13 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 
 
 
-```{r}
+```{r Data Cleaning Cont.}
 
 #sales ratio
 #The sales ratio is defined as the assessed value 
 #of a property divided by the sale price.
 
-db1 <- db1 %>% mutate(ratio = ASSESSEDVALUE/sale_price)
+db1 <- db1 %>% mutate(ratio = assessed_value/sale_price)
 
 
 #db1 <- db1 %>% mutate(sale_year = (sale_date))
@@ -111,17 +114,25 @@ db1 <- db1 %>% filter(sale_date >= 2015 & sale_date <= 2018)
 
 db1 <- distinct(db1)
 
+#creation of second data base with foreclosure data
 
-#Stats
+foreclosures <- rename(foreclosures, parcel_num = prop_parcelnum)
+
+foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
+
+db2 <- inner_join(db1, foreclosures, by = "parcel_num")
+
+
+#Stats/attempting in making graphs
 
 
 
 tbl1 <- db1 %>% group_by(year) %>%
-  select(sale_price, ASSESSEDVALUE) %>%
+  select(sale_price, assessed_value) %>%
     summarise(sale_price_median = median(sale_price),
-              assesed_median = median(ASSESSEDVALUE),
+              assesed_median = median(assessed_value),
               sale_price_avg = mean(sale_price),
-              assesed_avg = mean(ASSESSEDVALUE))
+              assesed_avg = mean(assessed_value))
 
 
 
@@ -130,11 +141,6 @@ tbl1 <- db1 %>% group_by(year) %>%
 db1 %>% group_by(`propclass`) %>%
   summarize(n = n()) %>%
   slice_max(order_by = `n`, n= 5)
-
-ggplot(db1, aes (x = sale_date, y = ratio)) +
-  geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k=4))
-
-
 
 
 tbl2 <- db1 %>% count(sale_date)
@@ -145,8 +151,30 @@ ggplot(tbl2, aes(x=sale_date, y =n)) +
   geom_point() +
   geom_line()
 
+ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(sale_date))) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
 
-
+foreclosures %>% drop_na(`2015`) %>% 
+  group_by(`2015`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2016`) %>% 
+  group_by(`2016`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2017`) %>% 
+  group_by(`2017`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2018`) %>% 
+  group_by(`2018`)%>% 
+  tally()
+  
+  
+  
 
 ```
 
@@ -163,7 +191,7 @@ ratios <-
   cmfproperty::reformat_data(
     data = db1,
     sale_col = "sale_price",
-    assessment_col = "ASSESSEDVALUE",
+    assessment_col = "assessed_value)",
     sale_year_col = "sale_date",
   )
   
@@ -178,14 +206,6 @@ cmfproperty::make_report(ratios,
 
 library(parsnip)
 
-foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
-
-
-foreclosures <- rename(foreclosures, parcel_num = prop_parcelnum)
-
-foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
-
-db2 <- inner_join(db1, foreclosures, by = "parcel_num")
 
 
 #regrssions
