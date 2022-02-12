@@ -68,10 +68,10 @@ assessments <- rename(assessments, parcel_num = PARCELNO,
 
 sales <- sales %>%
   mutate(
-    `sale_date` = year(`sale_date`)
+    year_sale = year(`sale_date`)
   )
                     
-sales <- sales %>% filter(sale_date >= 2015 & sale_date <= 2018)
+sales <- sales %>% filter(year_sale >= 2015 & year_sale<= 2018)
 
 sales %>% distinct(`sale_terms`)
 
@@ -109,7 +109,7 @@ db1 %>% count(`property_c`, sort=TRUE)
 db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
 
 
-db1 <- db1 %>% filter(sale_date >= 2015 & sale_date <= 2018)
+db1 <- db1 %>% filter(year_sale >= 2015 & year_sale <= 2018)
 
 
 db1 <- distinct(db1)
@@ -123,7 +123,7 @@ foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017
 db2 <- inner_join(db1, foreclosures, by = "parcel_num")
 
 
-#Stats/attempting in making graphs
+#Stats/tables/attempt in making graphs
 
 
 
@@ -136,27 +136,34 @@ tbl1 <- db1 %>% group_by(year) %>%
 
 
 
-#graphs 
-
 db1 %>% group_by(`propclass`) %>%
   summarize(n = n()) %>%
   slice_max(order_by = `n`, n= 5)
 
 
-tbl2 <- db1 %>% count(sale_date)
+tbl2 <- db1 %>% count(year_sale)
 
 
-
-ggplot(tbl2, aes(x=sale_date, y =n)) +
+#line graph
+ggplot(tbl2, aes(x=year_sale, y =n)) +
   geom_point() +
   geom_line()
 
-ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(sale_date))) +
+
+#scatter plot
+ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(year_sale))) +
   geom_point() +
   geom_smooth() +
   scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
   scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
 
+
+#boxplot
+ggplot(data = db1) + 
+  geom_boxplot(mapping = aes(x = factor(propclass), y = assessed_value))
+
+
+#number of foreclosures
 foreclosures %>% drop_na(`2015`) %>% 
   group_by(`2015`)%>% 
   tally()
@@ -208,7 +215,7 @@ library(parsnip)
 
 
 
-#regrssions
+#regressions
 
 m1 <- lm(sale_price ~ sale_date, data=db2)
 
@@ -235,7 +242,7 @@ lm_reg %>% broom::tidy()
 lm_reg %>% broom::glance()
 
 
-lm_reg <- lm(sale_price ~ sale_date + factor(property_c) + ASSESSEDVALUE, data = db2)
+lm_reg <- lm(sale_price ~ year_sale + factor(propclass) + assessed_value, data = db2)
 
 lm_reg %>% broom::tidy()
 
@@ -249,7 +256,7 @@ lm_reg %>% broom::augment()
 lm_reg <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(sale_price ~ sale_date + factor(property_c) + ASSESSEDVALUE + TAXABLEVALUE, data = db2)
+  fit(sale_price ~ year_sale+ factor(propclass) + assessed_value + tax_value, data = db2)
 
 
 lm_reg %>% broom::tidy()
@@ -262,7 +269,7 @@ lm_reg %>% broom::glance()
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(`2015`~ ASSESSEDVALUE, data=db2)
+  fit(`2015`~ assessed_value, data=db2)
 
 lm_fore %>% broom::tidy()
 
@@ -274,7 +281,7 @@ lm_fore %>% broom::glance()
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(`2015`~ ASSESSEDVALUE + TAXABLEVALUE, data=db2)
+  fit(`2015`~ assessed_value + tax_value, data=db2)
 
 lm_fore %>% broom::tidy()
 
@@ -285,7 +292,7 @@ lm_fore %>% broom::glance()
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(`2015`~ ASSESSEDVALUE + TAXABLEVALUE +sale_price, data=db2)
+  fit(`2015`~ assessed_value + tax_value +sale_price, data=db2)
 
 lm_fore %>% broom::tidy()
 
@@ -294,7 +301,7 @@ lm_fore %>% broom::glance()
 
 #worse r square
 
-lm_fore <- lm(`2015` ~ sale_date + ASSESSEDVALUE + TAXABLEVALUE + sale_price + factor(property_c), data = db2)
+lm_fore <- lm(`2015` ~ year_sale + assessed_value + tax_falue + sale_price + factor(propclass), data = db2)
 
 lm_fore %>% broom::tidy()
 lm_fore %>% broom::glance()
