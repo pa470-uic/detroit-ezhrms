@@ -219,18 +219,18 @@ library(parsnip)
 
 #regressions
 
-mod_1 <- lm(sale_price ~ year_sale, data=db2)
+sale_1 <- lm(sale_price ~ year_sale, data=db2)
 
-mod_1 %>% broom::tidy()
+sale_1 %>% broom::tidy()
 
-mod_1 %>% broom::glance()
+sale_1 %>% broom::glance()
 
-mod_1 %>% broom::augment()
+sale_1 %>% broom::augment()
 
 #very, very , very low R squared not a good model
 #data skewed to the left 
 
-ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
+ggplot(sale_1 %>% broom::augment(), aes(x=.resid)) +
   geom_density(fill='navy', alpha=.6) +
    scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
   scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
@@ -238,32 +238,32 @@ ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
 
 #trying parsnip regression with sale/foreclosure
 
-lm_reg <- 
+lm_sale <- 
  linear_reg() %>%
   set_engine("lm") %>%
   fit(sale_price ~ factor(year_sale) + factor(property_c), data = db2)
 
-lm_reg %>% broom::tidy()
+lm_sale %>% broom::tidy()
 
-lm_reg %>% broom::glance()
+lm_sale %>% broom::glance()
 
-#lm_reg %>% broom::augment() gives an error of Error in augment.model_fit(.) : 
+#lm_sale %>% broom::augment() gives an error of Error in augment.model_fit(.) : 
   #argument "new_data" is missing, with no default
 
-#(lm_reg %>% broom::augment(), aes(x=.resid)) +
+#(lm_sale %>% broom::augment(), aes(x=.resid)) +
   #geom_density(fill='navy', alpha=.6) +
    #scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
   #scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
 
 
 
-lm_reg <- lm(sale_price ~ year_sale + factor(property_c) + assessed_value, data = db2)
+lm_sale <- lm(sale_price ~ year_sale + factor(property_c) + assessed_value, data = db2)
 
-lm_reg %>% broom::tidy()
+lm_sale %>% broom::tidy()
 
-lm_reg %>% broom::glance()
+lm_sale %>% broom::glance()
 
-lm_reg %>% broom::augment()
+lm_sale %>% broom::augment()
 
 #a better model with an r squared of 19% large increase
 
@@ -276,16 +276,25 @@ lm_reg %>% broom::augment()
 
 
 
-lm_reg <- 
+lm_sale <- 
  linear_reg() %>%
   set_engine("lm") %>%
   fit(sale_price ~ year_sale + factor(property_c) + assessed_value + tax_value, data = db2)
 
 
-lm_reg %>% broom::tidy()
+lm_sale %>% broom::tidy()
 
-lm_reg %>% broom::glance()
+lm_sale %>% broom::glance()
 
+lm_sale %>% broom::augment()
+
+#not an improvement of the previous model 
+
+#not sure how to wrap my head around of the dummy variables for foreclosure 
+
+db2 <- db2 %>% mutate(foreclose = cbind(`2015`,`2016`,`2017`,`2018`))
+
+#db2 <- db2 %>% recode
 
 
 
@@ -298,8 +307,9 @@ lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
 
+#lm_fore %>% broom::augment() receive an error
 
-
+#high r squared 
 
 lm_fore <- 
  linear_reg() %>%
@@ -310,7 +320,7 @@ lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
 
-
+#no improvement
 
 lm_fore <- 
  linear_reg() %>%
@@ -321,17 +331,21 @@ lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
 
+#slightly increase r squared
 
 #worse r square
 
-lm_fore <- lm(`2015` ~ year_sale + assessed_value + tax_falue + sale_price + factor(property_c), data = db2)
+lm_fore <- lm(`2015` ~ year_sale + assessed_value + tax_value + sale_price + factor(property_c), data = db2)
 
 lm_fore %>% broom::tidy()
 lm_fore %>% broom::glance()
 lm_fore %>% broom::augment()
 
-ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
-  geom_density(fill='navy', alpha=.6)
+#augment works but no .resid column
+#slight decrase of of r squared
+
+#ggplot(m1 %>% broom::augment(), aes(x=.resid)) +
+  #geom_density(fill='navy', alpha=.6)
 
 ```
 
