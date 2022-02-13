@@ -303,10 +303,14 @@ lm_sale %>% broom::augment()
 #not sure how to wrap my head around of the dummy variables for foreclosure 
 
 
-
+#trying a logistic regression not entirely sure of the interpretation but I belive glm does not return a r squared
 fore_glm <- parsnip::logistic_reg()%>%
   set_engine("glm") %>%
-  fit(foreclose ~ assessed_value, data= db2)
+  fit(factor(foreclose) ~ assessed_value, family=binomial(link = "logit"), data= db2)
+
+fore_glm %>% broom::tidy()
+
+fore_glm %>% broom::glance()
 
 
 lm_fore <- 
@@ -341,6 +345,8 @@ lm_fore <-
 lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
+
+
 
 #slightly increase r squared
 
