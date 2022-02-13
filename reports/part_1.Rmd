@@ -300,10 +300,9 @@ lm_sale %>% broom::augment()
 
 #not an improvement of the previous model 
 
-#not sure how to wrap my head around of the dummy variables for foreclosure 
+#not sure how to wrap my head around of the dummy variables for foreclosure I would think this would be a logistic regression for log odds
 
-
-#trying a logistic regression not entirely sure of the interpretation but I belive glm does not return a r squared
+#trying a logistic regression not entirely sure of the interpretation but I believe glm does not return a r squared
 fore_glm <- parsnip::logistic_reg()%>%
   set_engine("glm") %>%
   fit(factor(foreclose) ~ assessed_value, family=binomial(link = "logit"), data= db2)
@@ -312,6 +311,7 @@ fore_glm %>% broom::tidy()
 
 fore_glm %>% broom::glance()
 
+#cont with liner regression
 
 lm_fore <- 
  linear_reg() %>%
