@@ -248,6 +248,8 @@ ggplot(sale_1 %>% broom::augment(), aes(x=.resid)) +
 
 #trying parsnip regression with sale/foreclosure
 
+#not sure why the sale database and assessment have a column for property class with different value. Sticing to property_c for the sales database for now. 
+
 lm_sale <- 
  linear_reg() %>%
   set_engine("lm") %>%
@@ -313,10 +315,11 @@ fore_glm %>% broom::glance()
 
 #cont with liner regression
 
+#model below is weak
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(foreclose ~ assessed_value, data=db2)
+  fit(assessed_value ~ foreclose, data=db2)
 
 lm_fore %>% broom::tidy()
 
