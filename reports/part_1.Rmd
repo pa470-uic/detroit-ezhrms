@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 library(tidyverse)
 library(lubridate)
 library(DBI)
+library(purrr)
 
 ```
 
@@ -121,7 +122,16 @@ foreclosures <- rename(foreclosures, parcel_num = prop_parcelnum)
 
 foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
 
+
+#not sure how to wrap my head around of the dummy variables for foreclosure 
+
+#removing NAs and making a dummy variables
+foreclosures <-foreclosures %>%
+  mutate(foreclose = coalesce(`2015`,`2016`,`2017`,`2018`))
+
 db2 <- inner_join(db1, foreclosures, by = "parcel_num")
+
+db2<- mutate_at(db2, c("foreclose"), ~replace(., is.na(.), 0))
 
 
 #Stats/tables/attempt in making graphs
@@ -292,16 +302,17 @@ lm_sale %>% broom::augment()
 
 #not sure how to wrap my head around of the dummy variables for foreclosure 
 
-db2 <- db2 %>% mutate(foreclose = cbind(`2015`,`2016`,`2017`,`2018`))
 
-#db2 <- db2 %>% recode
 
+fore_glm <- parsnip::logistic_reg()%>%
+  set_engine("glm") %>%
+  fit(foreclose ~ assessed_value, data= db2)
 
 
 lm_fore <- 
  linear_reg() %>%
   set_engine("lm") %>%
-  fit(`2015`~ assessed_value, data=db2)
+  fit(foreclose ~ assessed_value, data=db2)
 
 lm_fore %>% broom::tidy()
 
