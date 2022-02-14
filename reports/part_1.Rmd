@@ -135,7 +135,7 @@ db2<- mutate_at(db2, c("foreclose"), ~replace(., is.na(.), 0))
 
 
 #Stats/tables/attempt in making graphs
-#outside of making a scatter plot not sure how useful other graphs will be. They don't seem to be particularly relevant.
+#outside of making a scatter plot not sure how useful other graphs will be. They don't seem to be particularly readable.
 
 
 tbl1 <- db1 %>% group_by(year) %>%
@@ -219,7 +219,7 @@ ratios <-
   cmfproperty::reformat_data(
     data = db1,
     sale_col = "sale_price",
-    assessment_col = "assessed_value)",
+    assessment_col = "assessed_value",
     sale_year_col = "sale_date",
   )
   
@@ -334,7 +334,7 @@ lm_fore %>% broom::tidy()
 
 lm_fore %>% broom::glance()
 
-#lm_fore %>% broom::augment() receive an error
+#lm_fore %>% broom::augment() received an error
 
 
 ```
