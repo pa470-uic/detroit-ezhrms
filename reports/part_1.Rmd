@@ -1,6 +1,6 @@
 ---
 title: "Part 1"
-author: "YOUR NAME"
+author: "Ezequiel Hermosillo"
 output: 
   html_document:
     code_folding: hide
@@ -12,6 +12,8 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 library(tidyverse)
 library(lubridate)
+library(DBI)
+library(purrr)
 
 ```
 
@@ -19,6 +21,9 @@ Template file. Code will be included in folded blocks in the output to facilitat
 
 ```{r}
 #example connection to database. note that you have to download the database from onedrive
+
+#test 
+
 
 con <- DBI::dbConnect(RSQLite::SQLite(), "database/detroit.sqlite")
 
@@ -34,6 +39,303 @@ dplyr::tbl(con, 'sales')
 dplyr::tbl(con, 'sales') %>% count(year(sale_date))
 
 #dplyr::tbl(con, 'sales') %>% count(year(sale_date)) %>% show_query()
+
+```
+```{r Part I: Exploratory}
+
+#shows list of tables
+as.data.frame(dbListTables(con))
+
+
+#Looking at table data and variables 
+dbReadTable(con, 'sales')
+dbReadTable(con, 'assessments')
+#dbReadTable(con, 'blight')
+dbReadTable(con, 'foreclosures')
+#dbReadTable(con, 'parcels')
+#dbReadTable(con, 'parcels_historic')
+
+
+##Merging tables/Data cleaning
+
+#making tables
+sales <- dplyr::tbl(con, 'sales') %>% dplyr::collect()
+assessments <- dplyr::tbl(con, 'assessments') %>% dplyr::collect()
+foreclosures <- dplyr::tbl(con, 'foreclosures') %>% dplyr::collect()
+#rename column
+assessments <- rename(assessments, parcel_num = PARCELNO,
+                      assessed_value = ASSESSEDVALUE,
+                      tax_value = TAXABLEVALUE)
+
+# sale dat to only include the year
+sales <- sales %>%
+  mutate(
+    year_sale = year(`sale_date`)
+  )
+                    
+sales <- sales %>% filter(year_sale >= 2015 & year_sale<= 2018)
+
+sales %>% distinct(`sale_terms`)
+
+sales <- sales %>% filter(str_detect(`sale_terms`, 'VALID ARMS LENGTH'))
+
+
+db1 <- inner_join(sales, assessments, by = "parcel_num")
+
+
+
+
+
+```
+
+
+
+```{r Data Cleaning Cont.}
+
+#sales ratio
+#The sales ratio is defined as the assessed value 
+#of a property divided by the sale price.
+
+db1 <- db1 %>% mutate(ratio = assessed_value/sale_price)
+
+
+#db1 <- db1 %>% mutate(sale_year = (sale_date))
+
+
+#count property type
+db1 %>% count(`property_c`, sort=TRUE)
+
+
+#filtered out based on https://www.michigan.gov/documents/treasury/CAMA_Data_Standards_Final_121719_674322_7.pdf
+
+db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
+
+
+db1 <- db1 %>% filter(year_sale >= 2015 & year_sale <= 2018)
+
+
+db1 <- distinct(db1)
+
+#creation of second data base with foreclosure data
+
+foreclosures <- rename(foreclosures, parcel_num = prop_parcelnum)
+
+foreclosures <- foreclosures %>% select(parcel_num,prop_addr,`2015`,`2016`,`2017`,`2018`)
+
+
+#not sure how to wrap my head around of the dummy variables for foreclosure 
+
+#removing NAs and making a dummy variables
+foreclosures <-foreclosures %>%
+  mutate(foreclose = coalesce(`2015`,`2016`,`2017`,`2018`))
+
+db2 <- inner_join(db1, foreclosures, by = "parcel_num")
+
+db2<- mutate_at(db2, c("foreclose"), ~replace(., is.na(.), 0))
+
+
+#Stats/tables/attempt in making graphs
+#outside of making a scatter plot not sure how useful other graphs will be. They don't seem to be particularly readable.
+
+
+tbl1 <- db1 %>% group_by(year) %>%
+  select(sale_price, assessed_value) %>%
+    summarise(sale_price_median = median(sale_price),
+              assesed_median = median(assessed_value),
+              sale_price_avg = mean(sale_price),
+              assesed_avg = mean(assessed_value))
+
+
+
+db1 %>% group_by(`propclass`) %>%
+  summarize(n = n()) %>%
+  slice_max(order_by = `n`, n= 5)
+
+
+tbl2 <- db1 %>% count(year_sale)
+
+
+#line graph
+ggplot(tbl2, aes(x=year_sale, y =n)) +
+  geom_point() +
+  geom_line()
+
+
+#scatter plot
+ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(year_sale))) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+#boxplot
+ggplot(data = db1) + 
+  geom_boxplot(mapping = aes(x = factor(property_c), y = assessed_value)) +
+   scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
+
+ggplot(data = db2) + 
+  geom_boxplot(mapping = aes(x = factor(foreclose), y = assessed_value)) +
+   scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+#number of foreclosures
+foreclosures %>% drop_na(`2015`) %>% 
+  group_by(`2015`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2016`) %>% 
+  group_by(`2016`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2017`) %>% 
+  group_by(`2017`)%>% 
+  tally()
+  
+  foreclosures %>% drop_na(`2018`) %>% 
+  group_by(`2018`)%>% 
+  tally()
+  
+  
+ ggplot(db2, aes(x=assessed_value, y=sale_price, color=factor(foreclose))) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = FALSE)) 
+ 
+
+```
+
+
+
+
+```{r Part I cont}
+
+devtools::install_github("cmf-uchicago/cmfproperty")
+
+library(cmfproperty)
+
+ratios <-
+  cmfproperty::reformat_data(
+    data = db1,
+    sale_col = "sale_price",
+    assessment_col = "assessed_value",
+    sale_year_col = "sale_date",
+  )
+  
+
+cmfproperty::make_report(ratios, 
+                         jurisdiction_name = "Detorit, Michigan")
+
+
+```
+
+```{r Part I Cont}
+
+library(parsnip)
+
+
+
+#regressions
+
+sale_1 <- lm(sale_price ~ year_sale, data=db2)
+
+sale_1 %>% broom::tidy()
+
+sale_1 %>% broom::glance()
+
+sale_1 %>% broom::augment()
+
+#very, very , very low R squared not a good model
+#data skewed to the left 
+
+ggplot(sale_1 %>% broom::augment(), aes(x=.resid)) +
+  geom_density(fill='navy', alpha=.6) +
+   scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+#trying parsnip regression with sale/foreclosure
+
+#not sure why the sale database and assessment have a column for property class with different value. Sticing to property_c for the sales database for now. 
+
+lm_sale <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(sale_price ~ factor(year_sale) + factor(property_c), data = db2)
+
+lm_sale %>% broom::tidy()
+
+lm_sale %>% broom::glance()
+
+#lm_sale %>% broom::augment() gives an error of Error in augment.model_fit(.) : 
+  #argument "new_data" is missing, with no default
+
+#(lm_sale %>% broom::augment(), aes(x=.resid)) +
+  #geom_density(fill='navy', alpha=.6) +
+   #scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  #scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+
+lm_sale <- lm(sale_price ~ year_sale + factor(property_c) + assessed_value, data = db2)
+
+lm_sale %>% broom::tidy()
+
+lm_sale %>% broom::glance()
+
+lm_sale %>% broom::augment()
+
+#a better model with an r squared of 19% large increase
+
+#augment works here but it doesn't have the .resid column 
+
+#ggplot(mod_1 %>% broom::augment(), aes(x=.resid)) +
+  #geom_density(fill='navy', alpha=.6) +
+   #scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  #scale_x_continuous(labels = function(x) format(x, scientific = FALSE))
+
+
+# a minimally acceptable r squared
+lm_sale <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(sale_price ~ year_sale + factor(property_c) + assessed_value + tax_value + foreclose, data = db2)
+
+
+lm_sale %>% broom::tidy()
+
+lm_sale %>% broom::glance()
+
+lm_sale %>% broom::augment()
+
+#not an improvement of the previous model 
+
+#not sure how to wrap my head around of the dummy variables for foreclosure I would think this would be a logistic regression for log odds
+
+#trying a logistic regression not entirely sure of the interpretation but I believe glm does not return a r squared
+fore_glm <- parsnip::logistic_reg()%>%
+  set_engine("glm") %>%
+  fit(factor(foreclose) ~ assessed_value, family=binomial(link = "logit"), data= db2)
+
+fore_glm %>% broom::tidy()
+
+fore_glm %>% broom::glance()
+
+#cont with liner regression instead
+
+#a minimally acceptable r squared
+lm_fore <- 
+ linear_reg() %>%
+  set_engine("lm") %>%
+  fit(assessed_value ~ foreclose + sale_price + year_sale + factor(property_c), data=db2)
+
+lm_fore %>% broom::tidy()
+
+lm_fore %>% broom::glance()
+
+#lm_fore %>% broom::augment() received an error
+
 
 ```
 
