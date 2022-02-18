@@ -1,19 +1,22 @@
 ---
 title: "Part 1"
 author: "Ezequiel Hermosillo"
-output: 
+output:
   html_document:
     code_folding: hide
     df_print: paged
     theme: sandstone
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
+options(knitr.duplicate.label = "allow")
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 library(tidyverse)
 library(lubridate)
 library(DBI)
 library(purrr)
+
 
 ```
 
@@ -90,8 +93,7 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 
 
 
-```{r Data Cleaning Cont.}
-
+```{r Data Cleaning}
 #sales ratio
 #The sales ratio is defined as the assessed value 
 #of a property divided by the sale price.
@@ -104,17 +106,17 @@ db1 <- db1 %>% mutate(ratio = assessed_value/sale_price)
 
 #count property type
 db1 %>% count(`property_c`, sort=TRUE)
+```
 
-
+```{r Data Cleaning Cont}
 #filtered out based on https://www.michigan.gov/documents/treasury/CAMA_Data_Standards_Final_121719_674322_7.pdf
 
 db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
 
-
 db1 <- db1 %>% filter(year_sale >= 2015 & year_sale <= 2018)
 
-
 db1 <- distinct(db1)
+
 
 #creation of second data base with foreclosure data
 
@@ -160,7 +162,10 @@ ggplot(tbl2, aes(x=year_sale, y =n)) +
   geom_point() +
   geom_line()
 
+```
 
+
+```{r Graphs}
 #scatter plot
 ggplot(db1, aes(x=assessed_value, y=sale_price, fill=factor(year_sale))) +
   geom_point() +
@@ -209,7 +214,7 @@ foreclosures %>% drop_na(`2015`) %>%
 
 
 
-```{r Part I cont}
+```{r  cmfproperty}
 
 devtools::install_github("cmf-uchicago/cmfproperty")
 
@@ -220,7 +225,7 @@ ratios <-
     data = db1,
     sale_col = "sale_price",
     assessment_col = "assessed_value",
-    sale_year_col = "sale_date",
+    sale_year_col = "year_sale",
   )
   
 
@@ -230,11 +235,9 @@ cmfproperty::make_report(ratios,
 
 ```
 
-```{r Part I Cont}
+```{r Cont}
 
 library(parsnip)
-
-
 
 #regressions
 
@@ -242,9 +245,11 @@ sale_1 <- lm(sale_price ~ year_sale, data=db2)
 
 sale_1 %>% broom::tidy()
 
-sale_1 %>% broom::glance()
+#sale_1 %>% broom::glance()
 
-sale_1 %>% broom::augment()
+#sale_1 %>% broom::augment()
+
+#Issues with augment no prediction column and "new_data" is missing for the models
 
 #very, very , very low R squared not a good model
 #data skewed to the left 
@@ -266,7 +271,7 @@ lm_sale <-
 
 lm_sale %>% broom::tidy()
 
-lm_sale %>% broom::glance()
+#lm_sale %>% broom::glance()
 
 #lm_sale %>% broom::augment() gives an error of Error in augment.model_fit(.) : 
   #argument "new_data" is missing, with no default
@@ -282,9 +287,9 @@ lm_sale <- lm(sale_price ~ year_sale + factor(property_c) + assessed_value, data
 
 lm_sale %>% broom::tidy()
 
-lm_sale %>% broom::glance()
+#lm_sale %>% broom::glance()
 
-lm_sale %>% broom::augment()
+#lm_sale %>% broom::augment()
 
 #a better model with an r squared of 19% large increase
 
@@ -305,9 +310,9 @@ lm_sale <-
 
 lm_sale %>% broom::tidy()
 
-lm_sale %>% broom::glance()
+#lm_sale %>% broom::glance()
 
-lm_sale %>% broom::augment()
+#lm_sale %>% broom::augment()
 
 #not an improvement of the previous model 
 
@@ -320,7 +325,7 @@ fore_glm <- parsnip::logistic_reg()%>%
 
 fore_glm %>% broom::tidy()
 
-fore_glm %>% broom::glance()
+#fore_glm %>% broom::glance()
 
 #cont with liner regression instead
 
@@ -332,7 +337,7 @@ lm_fore <-
 
 lm_fore %>% broom::tidy()
 
-lm_fore %>% broom::glance()
+#lm_fore %>% broom::glance()
 
 #lm_fore %>% broom::augment() received an error
 
