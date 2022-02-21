@@ -1,5 +1,5 @@
 ---
-title: "Part 1"
+title: "Part 2"
 author: "Ezequiel Hermosillo"
 output:
   html_document:
@@ -16,11 +16,17 @@ library(tidyverse)
 library(lubridate)
 library(DBI)
 library(purrr)
+library(stargazer)
+library(DT)
 
 
 ```
 
-Template file. Code will be included in folded blocks in the output to facilitate grading. Please knit this file and commit both the rmd and the html output. If you add external files to your analysis, please commit them to the files folder in this repository. NOTE: please do not commit large (15MB+) files to GitHub. Instead please denote the origin of the files in your code. 
+Property taxes through out the United States are inequitable where low-value properties have higher tax rates compared to high valued properties.This inaccurate calculation is known as regressivity that has resulted in owners of low property value pay too much (Haris School of Public Policy). Detroit, Michigan has undergone a foreclosure crisis that has effected and displaced Black residents who make up 80% of the population in the city (Atuahene and Berry 2019). 
+
+The data analyzed is focused on four year from 2015-2018. The analysis conducted is only focused on single family homes classified as 401 officially property a property of land that has a residential  structure. In other words it is a residential property. Table 1 is the descriptive statistics for every year showing that number of sales increased for every year. Additionally, as the sale prices median rose the median asses value declined between the period analyzed. The minimum sale price for a house is 4,000 and the max is 395,000.
+
+The first figure illustrates the decline of assessed values on the same graph marking the average sales and median ratio broken by waters of the years analyzed. The ratio is converted to a percent. There are large drops of the average ratio in the year 2016 and at the end of 2017. The largest drop occured in 2016. 
 
 ```{r}
 #example connection to database. note that you have to download the database from onedrive
@@ -42,6 +48,7 @@ dplyr::tbl(con, 'sales')
 dplyr::tbl(con, 'sales') %>% count(year(sale_date))
 
 #dplyr::tbl(con, 'sales') %>% count(year(sale_date)) %>% show_query()
+
 
 ```
 ```{r Part I: Exploratory}
@@ -85,6 +92,7 @@ sales <- sales %>% filter(str_detect(`sale_terms`, 'VALID ARMS LENGTH'))
 
 db1 <- inner_join(sales, assessments, by = "parcel_num")
 
+db1 <- db1 %>% rename(tax_year = year)
 
 
 
@@ -93,13 +101,15 @@ db1 <- inner_join(sales, assessments, by = "parcel_num")
 
 
 
-```{r Data Cleaning}
+```{r}
 #sales ratio
 #The sales ratio is defined as the assessed value 
 #of a property divided by the sale price.
 
 db1 <- db1 %>% mutate(ratio = assessed_value/sale_price)
 
+min(db2$sale_price)
+max(db2$sale_price)
 
 #db1 <- db1 %>% mutate(sale_year = (sale_date))
 
@@ -111,7 +121,7 @@ db1 %>% count(`property_c`, sort=TRUE)
 ```{r Data Cleaning Cont}
 #filtered out based on https://www.michigan.gov/documents/treasury/CAMA_Data_Standards_Final_121719_674322_7.pdf
 
-db1 <- db1 %>% filter(!property_c %in% c(483,447,446,404,465,448,461,403))
+db1 <- db1 %>% filter(!property_c %in% c(402,483,447,446,404,465,448,461,403))
 
 db1 <- db1 %>% filter(year_sale >= 2015 & year_sale <= 2018)
 
@@ -136,28 +146,66 @@ db2 <- inner_join(db1, foreclosures, by = "parcel_num")
 db2<- mutate_at(db2, c("foreclose"), ~replace(., is.na(.), 0))
 
 
+db2 <- db2 %>% filter(property_c == 401 & assessed_value >= 2000 & sale_price >= 4000)
+
+db3 <- db2 %>%
+  arrange(parcel_num, forclose == 1) %>%
+  filter(duplicated(pracel_num) == FALSE)
+              
+
 #Stats/tables/attempt in making graphs
 #outside of making a scatter plot not sure how useful other graphs will be. They don't seem to be particularly readable.
 
 
-tbl1 <- db1 %>% group_by(year) %>%
-  select(sale_price, assessed_value) %>%
+#tbl1 <- db1 %>% group_by(year(sale_date)) %>%
+ # select(sale_price, assessed_value) %>%
+  #  summarise(sale_price_median = median(sale_price),
+   #           assesed_median = median(assessed_value),
+    #          sale_price_avg = mean(sale_price),
+     #         assesed_avg = mean(assessed_value))
+
+
+tbl1 <- db2 %>%
+  group_by(year_sale) %>%
+  select(sale_price, assessed_value, year_sale, foreclose) %>%
+  filter(foreclose == 1) %>%
     summarise(sale_price_median = median(sale_price),
-              assesed_median = median(assessed_value),
-              sale_price_avg = mean(sale_price),
-              assesed_avg = mean(assessed_value))
+              assesed_median = median(assessed_value))
+tbl2 <- db2 %>% count(year_sale)
+
+tbl1 <- inner_join(tbl1, tbl2, by ="year_sale")
+
+tbl1 <- tbl1 %>% rename(num_sale = n)
+  
+datatable(tbl1, options = list(dom = 't'),  colnames = c('Year of Sale', 'Sale Price Mdiean', 'Assessed Median', 'Number of Arm Length Sales'))
 
 
+# %>% group_by(`propclass`) %>%
+ # summarize(n = n()) %>%
+  #slice_max(order_by = `n`, n= 5)
 
-db1 %>% group_by(`propclass`) %>%
-  summarize(n = n()) %>%
-  slice_max(order_by = `n`, n= 5)
-
-
-tbl2 <- db1 %>% count(year_sale)
 
 
 #line graph
+
+
+tbl3 <- db2 %>% group_by(sale_date) %>% 
+ filter(foreclose == 1) %>%
+  mutate(qtr = quarter(sale_date, with_year = TRUE)) %>%
+  group_by(qtr) %>%
+  summarise(avg_ratio = mean(ratio * 100),
+            med_ratio = median(ratio * 100)) 
+
+ 
+ggplot(tbl3.., aes(x = qtr)) +
+  geom_line(aes(y = avg_ratio), color = "steelblue") +
+  geom_line(aes(y = med_ratio), color = "darkred") +
+  geom_point(aes(y = avg_ratio), color = "steelblue") +
+  geom_point(aes(y = med_ratio), color = "darkred")
+  
+                              
+
+
 ggplot(tbl2, aes(x=year_sale, y =n)) +
   geom_point() +
   geom_line()
